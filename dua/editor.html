@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Hisn JSON — Single-file Editor</title>
+<style>
+  :root{--bg:#f7fafc;--card:#fff;--muted:#6b7280;--accent:#2563eb}
+  body{font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; margin:0; background:var(--bg); color:#0f172a;}
+  .app{max-width:1200px;margin:18px auto;padding:18px;}
+  header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;}
+  header h1{font-size:18px;margin:0}
+  .controls{display:flex;gap:8px;align-items:center}
+  input[type=file]{display:none}
+  .btn{padding:8px 12px;border-radius:8px;border:0;cursor:pointer}
+  .btn.ghost{background:#fff;border:1px solid #e6eef6}
+  .btn.primary{background:var(--accent);color:white}
+  .layout{display:flex;gap:16px}
+  .sidebar{width:300px;background:linear-gradient(#fff,#fff);padding:12px;border-radius:8px;box-shadow:0 1px 3px rgba(2,6,23,0.06)}
+  .list{max-height:70vh;overflow:auto;margin-top:8px}
+  .chapter{padding:8px;border-bottom:1px solid #eef2f7;cursor:pointer}
+  .chapter.active{background:#eff6ff;font-weight:600}
+  .main{flex:1;padding:12px;background:linear-gradient(#fff,#fff);border-radius:8px;box-shadow:0 1px 3px rgba(2,6,23,0.06);max-height:80vh;overflow:auto}
+  .entry{padding:10px;border-radius:8px;border:1px solid #f1f5f9;margin-bottom:12px;background:#fff}
+  label.small{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+  textarea,input[type="text"]{width:100%;padding:8px;border-radius:6px;border:1px solid #e6eef6;background:#fbfdff}
+  .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .row{display:flex;gap:8px;align-items:center}
+  .muted{color:var(--muted);font-size:13px}
+  .mini{font-size:12px;padding:6px 8px;border-radius:6px}
+  .danger{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
+  .small-btn{padding:6px 8px;border-radius:6px;border:1px solid #e6eef6;background:#fff;cursor:pointer}
+  footer{margin-top:12px;display:flex;justify-content:space-between;align-items:center}
+  code{background:#0f172a;color:#fff;padding:2px 6px;border-radius:4px;font-size:12px}
+  .flex-between{display:flex;justify-content:space-between;align-items:center}
+  .lang-tag{font-size:12px;padding:4px 8px;border-radius:6px;background:#f8fafc;border:1px solid #e6eef6}
+  .topbar{display:flex;gap:8px;align-items:center}
+  .search{width:100%;padding:8px;border-radius:8px;border:1px solid #e6eef6;background:#fff}
+  .hint{font-size:12px;color:var(--muted);margin-top:6px}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div>
+      <h1>Hisn — Single-file JSON Editor</h1>
+      <div class="hint">Load your <code>hisn.json</code>, edit headnotes & footnotes, and download changes — no server required.</div>
+    </div>
+
+    <div class="controls">
+      <label class="btn ghost" for="fileInput" title="Load hisn.json">Load JSON</label>
+      <input id="fileInput" type="file" accept=".json,application/json">
+      <button id="pasteBtn" class="btn ghost">Paste JSON</button>
+      <button id="newBtn" class="btn ghost">New (empty)</button>
+      <button id="downloadBtn" class="btn primary">Download hisn.json</button>
+      <button id="backupBtn" class="btn ghost">Download Backup</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="row" style="align-items:center">
+        <input id="filter" class="search" placeholder="Search chapter or text..." />
+      </div>
+
+      <div class="list" id="chaptersList"></div>
+
+      <div style="margin-top:8px" class="flex-between">
+        <div class="muted">Chapters: <span id="chapCount">0</span></div>
+        <div>
+          <button id="addChapterBtn" class="small-btn">+ Chapter</button>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="flex-between">
+        <div>
+          <h2 id="chapterTitle">No chapter selected</h2>
+          <div class="muted" id="chapterSubtitle">Load a file or create a new chapter</div>
+        </div>
+
+        <div style="display:flex;gap:8px;align-items:center">
+          <button id="addItemBtn" class="small-btn">+ Add item</button>
+          <button id="saveBtn" class="btn primary">Apply changes (in-memory)</button>
+        </div>
+      </div>
+
+      <div id="entriesContainer" style="margin-top:12px"></div>
+
+      <div style="margin-top:8px" class="hint">
+        <strong>Note:</strong> Saving writes changes in memory — use <em>Download hisn.json</em> to persist to disk.
+      </div>
+    </main>
+  </div>
+
+  <footer>
+    <div class="muted" id="status">No file loaded</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button id="importJsonBtn" class="small-btn">Import JSON text</button>
+      <button id="clearBtn" class="small-btn danger">Clear</button>
+    </div>
+  </footer>
+</div>
+
+<!-- Modal prompts -->
+<div id="modalRoot" style="display:none"></div>
+
+<script>
+  // State
+  let hisn = null;            // top-level array
+  let selectedChapter = 0;
+  let selectedEntry = 0;
+  let lastBackup = null;
+
+  // Utilities
+  const $ = (id) => document.getElementById(id);
+  const msg = (t) => { $('status').textContent = t; };
+
+  // File load
+  $('fileInput').addEventListener('change', async (ev) => {
+    const f = ev.target.files[0];
+    if (!f) return;
+    try {
+      const txt = await f.text();
+      const parsed = JSON.parse(txt);
+      if (!Array.isArray(parsed)) {
+        alert('Expected top-level JSON array. Your file may not be the expected hisn.json shape.');
+        return;
+      }
+      hisn = parsed;
+      selectedChapter = 0;
+      selectedEntry = 0;
+      renderAll();
+      msg('Loaded from file: ' + f.name);
+    } catch (e) {
+      alert('Failed to load JSON: ' + e.message);
+    }
+    ev.target.value = '';
+  });
+
+  // Paste JSON
+  $('pasteBtn').addEventListener('click', async () => {
+    const txt = prompt('Paste raw JSON here:');
+    if (!txt) return;
+    try {
+      const parsed = JSON.parse(txt);
+      if (!Array.isArray(parsed)) throw new Error('Top-level must be array');
+      hisn = parsed;
+      selectedChapter = 0; selectedEntry = 0;
+      renderAll();
+      msg('Loaded from pasted JSON');
+    } catch (e) {
+      alert('Invalid JSON: ' + e.message);
+    }
+  });
+
+  // New empty
+  $('newBtn').addEventListener('click', () => {
+    if (!confirm('Create a new empty hisn JSON array? This replaces current in-memory data.')) return;
+    hisn = [];
+    selectedChapter = 0; selectedEntry = 0;
+    renderAll();
+    msg('New empty data created');
+  });
+
+  // Add chapter
+  $('addChapterBtn').addEventListener('click', () => {
+    if (!hisn) hisn = [];
+    const chapterNum = hisn.length + 1;
+    const ch = {
+      chapter: chapterNum,
+      name: [{ language: 'english', text: 'Chapter ' + chapterNum }],
+      data: []
+    };
+    hisn.push(ch);
+    selectedChapter = hisn.length - 1;
+    renderAll();
+  });
+
+  // Add entry to selected chapter
+  $('addItemBtn').addEventListener('click', () => {
+    if (!ensureChapterSelected()) return;
+    const ch = hisn[selectedChapter];
+    if (!ch.data) ch.data = [];
+    ch.data.push({
+      text: [
+        { language: 'arabic', text: '' },
+        { language: 'english', text: '' },
+        { language: 'bahasa', text: '' }
+      ],
+      headnote: [],
+      // footnote can be added by user
+    });
+    selectedEntry = ch.data.length - 1;
+    renderEntries();
+  });
+
+  // Apply changes (just re-render & keep in memory)
+  $('saveBtn').addEventListener('click', () => {
+    msg('Changes applied in memory. Use Download to save to disk.');
+  });
+
+  // Download hisn.json (updated)
+  $('downloadBtn').addEventListener('click', () => {
+    if (!hisn) { alert('No data to download.'); return; }
+    const blob = new Blob([JSON.stringify(hisn, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'hisn.json';
+    a.click();
+    URL.revokeObjectURL(a.href);
+    msg('Downloaded hisn.json');
+  });
+
+  // Download backup (timestamped)
+  $('backupBtn').addEventListener('click', () => {
+    if (!hisn) { alert('No data to backup.'); return; }
+    const ts = new Date().toISOString().replace(/[:.]/g,'-');
+    const blob = new Blob([JSON.stringify(hisn, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `hisn.backup.${ts}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    lastBackup = ts;
+    msg('Backup downloaded: hisn.backup.' + ts + '.json');
+  });
+
+  // Clear
+  $('clearBtn').addEventListener('click', () => {
+    if (!confirm('Clear in-memory data? This will not delete files on disk.')) return;
+    hisn = null;
+    selectedChapter = 0; selectedEntry = 0;
+    renderAll();
+    msg('Cleared');
+  });
+
+  // Import JSON text via prompt
+  $('importJsonBtn').addEventListener('click', async () => {
+    const txt = prompt('Paste entire JSON text here (will replace current in-memory data):');
+    if (!txt) return;
+    try {
+      const parsed = JSON.parse(txt);
+      if (!Array.isArray(parsed)) throw new Error('Top-level must be array');
+      hisn = parsed;
+      selectedChapter = 0; selectedEntry = 0;
+      renderAll();
+      msg('Imported JSON text');
+    } catch (e) {
+      alert('Invalid JSON: ' + e.message);
+    }
+  });
+
+  // Search/filter chapters
+  $('filter').addEventListener('input', () => {
+    renderChapters();
+  });
+
+  function ensureChapterSelected() {
+    if (!hisn || hisn.length === 0) {
+      alert('No chapter exists. Add a chapter first.');
+      return false;
+    }
+    if (selectedChapter < 0 || selectedChapter >= hisn.length) selectedChapter = 0;
+    return true;
+  }
+
+  function renderAll() {
+    renderChapters();
+    renderChapterHeader();
+    renderEntries();
+    $('chapCount').textContent = hisn ? hisn.length : 0;
+  }
+
+  function renderChapters() {
+    const container = $('chaptersList');
+    container.innerHTML = '';
+    if (!hisn) return;
+    const q = $('filter').value.trim().toLowerCase();
+    hisn.forEach((c, i) => {
+      // derive title
+      let title = getName(c) || ('Chapter ' + (c.chapter || (i+1)));
+      // quick search: title or any text of chapter
+      let hay = title.toLowerCase();
+      const texts = (c.data || []).flatMap(d => (d.text || []).map(t=>t.text||''));
+      hay += ' ' + texts.join(' ');
+      if (q && !hay.includes(q)) return;
+      const el = document.createElement('div');
+      el.className = 'chapter' + (i===selectedChapter ? ' active' : '');
+      el.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-weight:600">${escapeHtml(title)}</div>
+          <div class="muted">#${c.chapter || i+1} • ${ (c.data||[]).length } items</div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button class="small-btn" onclick="selectChapter(${i})">Open</button>
+          <button class="small-btn" onclick="renameChapter(${i})">Rename</button>
+          <button class="small-btn" onclick="removeChapter(${i})">Delete</button>
+        </div>
+      </div>`;
+      container.appendChild(el);
+    });
+  }
+
+  window.selectChapter = (idx) => {
+    selectedChapter = idx;
+    selectedEntry = 0;
+    renderAll();
+  };
+
+  window.renameChapter = (idx) => {
+    const ch = hisn[idx];
+    const newName = prompt('New chapter English name', (getName(ch) || ''));
+    if (newName === null) return;
+    if (!ch.name) ch.name = [];
+    const eng = ch.name.find(n => n.language === 'english');
+    if (eng) eng.text = newName;
+    else ch.name.push({ language: 'english', text: newName });
+    renderChapters();
+    renderChapterHeader();
+  };
+
+  window.removeChapter = (idx) => {
+    if (!confirm('Delete chapter and all its entries?')) return;
+    hisn.splice(idx,1);
+    selectedChapter = Math.max(0, Math.min(selectedChapter, hisn.length-1));
+    renderAll();
+  };
+
+  function getName(ch) {
+    if (!ch) return null;
+    const n = ch.name && ch.name.find(x => x.language === 'english');
+    return n ? n.text : (ch.name && ch.name[0] && ch.name[0].text) || null;
+  }
+
+  function renderChapterHeader() {
+    const titleEl = $('chapterTitle');
+    const subEl = $('chapterSubtitle');
+    if (!hisn || hisn.length === 0) {
+      titleEl.textContent = 'No chapter selected';
+      subEl.textContent = 'Create or load a hisn.json to start editing.';
+      return;
+    }
+    const ch = hisn[selectedChapter];
+    titleEl.textContent = getName(ch) || ('Chapter ' + (ch.chapter || (selectedChapter+1)));
+    subEl.textContent = `Chapter index: ${selectedChapter} • items: ${ (ch.data||[]).length }`;
+  }
+
+  function renderEntries() {
+    const cont = $('entriesContainer');
+    cont.innerHTML = '';
+    if (!ensureChapterSelected()) return;
+    renderChapterHeader();
+
+    const ch = hisn[selectedChapter];
+    const entries = ch.data || [];
+    if (entries.length === 0) {
+      cont.innerHTML = '<div class="muted">No items. Click "+ Add item" to add entries.</div>';
+      return;
+    }
+
+    entries.forEach((entry, idx) => {
+      const div = document.createElement('div');
+      div.className = 'entry';
+      div.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <strong>Entry #${idx+1}</strong>
+          <div class="muted" style="margin-top:4px">${ (entry.text && entry.text.find(t=>t.language==='english')?.text) ? cut(entry.text.find(t=>t.language==='english').text,80) : '' }</div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="small-btn" onclick="moveEntryUp(${idx})">↑</button>
+          <button class="small-btn" onclick="moveEntryDown(${idx})">↓</button>
+          <button class="small-btn" onclick="removeEntry(${idx})">Delete</button>
+        </div>
+      </div>`;
+
+      // texts
+      const texts = entry.text || [];
+      const textsHtml = texts.map((t, ti) => {
+        const id = `t_${selectedChapter}_${idx}_${ti}`;
+        return `<div style="margin-top:8px">
+          <label class="small">${escapeHtml(t.language||('lang'+ti))}</label>
+          <textarea id="${id}" data-ci="${idx}" data-li="${ti}" placeholder="${escapeHtml(t.language||'')}" >${escapeHtml(t.text||'')}</textarea>
+        </div>`;
+      }).join('');
+
+      // headnote
+      const headnotes = entry.headnote || [];
+      const headHtml = headnotes.map((h, hi) => {
+        const id = `h_${selectedChapter}_${idx}_${hi}`;
+        return `<div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+          <div class="lang-tag">${escapeHtml(h.language||'')}</div>
+          <input id="${id}" data-ci="${idx}" data-hi="${hi}" placeholder="headnote text" value="${escapeHtml(h.text||'')}" />
+          <button class="small-btn" onclick="removeHeadnote(${idx},${hi})">Remove</button>
+        </div>`;
+      }).join('');
+
+      // footnote
+      const footnotes = entry.footnote || [];
+      const footHtml = footnotes.map((f, fi) => {
+        const id = `f_${selectedChapter}_${idx}_${fi}`;
+        return `<div style="margin-top:8px;display:flex;gap:8px;align-items:center">
+          <div class="lang-tag">${escapeHtml(f.language||'')}</div>
+          <input id="${id}" data-ci="${idx}" data-fi="${fi}" placeholder="footnote text" value="${escapeHtml(f.text||'')}" />
+          <button class="small-btn" onclick="removeFootnote(${idx},${fi})">Remove</button>
+        </div>`;
+      }).join('');
+
+      div.innerHTML += `
+        <div style="margin-top:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div class="muted">Texts</div>
+            <div><button class="small-btn" onclick="addTextLang(${idx})">+ Text language</button></div>
+          </div>
+          ${textsHtml}
+        </div>
+
+        <div style="margin-top:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div class="muted">Headnotes</div>
+            <div><button class="small-btn" onclick="addHeadnote(${idx})">+ Add headnote</button></div>
+          </div>
+          ${headHtml}
+        </div>
+
+        <div style="margin-top:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div class="muted">Footnotes</div>
+            <div><button class="small-btn" onclick="addFootnote(${idx})">+ Add footnote</button></div>
+          </div>
+          ${footHtml}
+        </div>
+      `;
+
+      cont.appendChild(div);
+    });
+
+    // attach listeners to inputs and textareas
+    attachInputListeners();
+  }
+
+  function attachInputListeners() {
+    // textareas for entry text
+    document.querySelectorAll('textarea[id^="t_"]').forEach(el => {
+      if (el._bound) return; // avoid double-binding
+      el._bound = true;
+      el.addEventListener('input', (e) => {
+        const ci = parseInt(e.target.dataset.ci,10);
+        const li = parseInt(e.target.dataset.li,10);
+        const val = e.target.value;
+        hisn[selectedChapter].data[ci].text[li].text = val;
+      });
+    });
+
+    // headnote inputs
+    document.querySelectorAll('input[id^="h_"]').forEach(el => {
+      if (el._bound) return;
+      el._bound = true;
+      el.addEventListener('input', (e) => {
+        const ci = parseInt(e.target.dataset.ci,10);
+        const hi = parseInt(e.target.dataset.hi,10);
+        const val = e.target.value;
+        hisn[selectedChapter].data[ci].headnote[hi].text = val;
+      });
+    });
+
+    // footnote inputs
+    document.querySelectorAll('input[id^="f_"]').forEach(el => {
+      if (el._bound) return;
+      el._bound = true;
+      el.addEventListener('input', (e) => {
+        const ci = parseInt(e.target.dataset.ci,10);
+        const fi = parseInt(e.target.dataset.fi,10);
+        const val = e.target.value;
+        hisn[selectedChapter].data[ci].footnote[fi].text = val;
+      });
+    });
+  }
+
+  // Add a text language field to an entry
+  window.addTextLang = (entryIdx) => {
+    const ch = hisn[selectedChapter];
+    const entry = ch.data[entryIdx];
+    if (!entry.text) entry.text = [];
+    const lang = prompt('Language code/name for this text (e.g. english, bahasa, arabic):','english');
+    if (lang === null) return;
+    entry.text.push({ language: lang || 'english', text: '' });
+    renderEntries();
+  };
+
+  // Add headnote to entry
+  window.addHeadnote = (entryIdx) => {
+    const ch = hisn[selectedChapter];
+    const entry = ch.data[entryIdx];
+    if (!entry.headnote) entry.headnote = [];
+    const lang = prompt('Language for headnote (e.g. english):','english');
+    if (lang === null) return;
+    entry.headnote.push({ language: lang || 'english', text: '' });
+    renderEntries();
+  };
+
+  // Remove headnote
+  window.removeHeadnote = (entryIdx, hIdx) => {
+    if (!confirm('Remove this headnote?')) return;
+    hisn[selectedChapter].data[entryIdx].headnote.splice(hIdx,1);
+    renderEntries();
+  };
+
+  // Add footnote to entry
+  window.addFootnote = async (entryIdx) => {
+  const ch = hisn[selectedChapter];
+  const entry = ch.data[entryIdx];
+
+  if (!entry.footnote) entry.footnote = [];
+
+  const lang = 'english';
+
+  // Read clipboard text
+  let clip = '';
+  try {
+    clip = await navigator.clipboard.readText();
+  } catch (err) {
+    console.warn("Clipboard read failed:", err);
+  }
+
+  entry.footnote.push({
+    language: lang,
+    text: clip || ''   // insert clipboard text if available
+  });
+
+  renderEntries();
+};
+
+
+  // Remove footnote
+  window.removeFootnote = (entryIdx, fIdx) => {
+    if (!confirm('Remove this footnote?')) return;
+    hisn[selectedChapter].data[entryIdx].footnote.splice(fIdx,1);
+    renderEntries();
+  };
+
+  // Entry reordering & deletion
+  window.moveEntryUp = (idx) => {
+    if (idx <= 0) return;
+    const arr = hisn[selectedChapter].data;
+    [arr[idx-1], arr[idx]] = [arr[idx], arr[idx-1]];
+    renderEntries();
+  };
+  window.moveEntryDown = (idx) => {
+    const arr = hisn[selectedChapter].data;
+    if (idx >= arr.length - 1) return;
+    [arr[idx+1], arr[idx]] = [arr[idx], arr[idx+1]];
+    renderEntries();
+  };
+  window.removeEntry = (idx) => {
+    if (!confirm('Delete this entry?')) return;
+    hisn[selectedChapter].data.splice(idx,1);
+    renderEntries();
+  };
+
+  // Helpers
+  function escapeHtml(s) {
+    if (s == null) return '';
+    return String(s)
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;');
+  }
+  function cut(s, n) { if (!s) return ''; return s.length > n ? s.slice(0,n-1) + '…' : s; }
+
+  // initial render
+  renderAll();
+</script>
+</body>
+</html>

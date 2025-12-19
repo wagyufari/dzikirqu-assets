@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reorder Items with Drag Upload</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* Custom styling for the drag handle */
+      .drag-handle {
+        cursor: grab;
+        display: inline-block;
+        margin-right: 1rem;
+        color: #6b7280; /* Gray 500 */
+      }
+      .item.dragging {
+        opacity: 0.6;
+        transform: scale(1.02);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1),
+          0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      }
+      .drop-area {
+        transition: all 0.2s;
+      }
+      .drop-area.highlight {
+        border-color: #3b82f6; /* Blue 500 */
+        background-color: #dbeafe; /* Blue 100 */
+      }
+      /* Hide the default file input visually but keep it functional */
+      #fileInput {
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        position: absolute;
+        clip: rect(0, 0, 0, 0);
+        border: 0;
+      }
+    </style>
+  </head>
+  <body
+    class="bg-gray-100 min-h-screen flex items-center justify-center p-4 font-sans antialiased"
+  >
+    <div
+      id="appContainer"
+      class="w-full max-w-xl bg-white shadow-2xl rounded-xl p-6 md:p-8"
+    >
+      <h1 class="text-3xl font-extrabold text-gray-800 mb-6">Order Editor</h1>
+      <p class="text-sm text-gray-500 mb-6">
+        Drag a JSON file below, then reorder the list items and export the file
+        with updated <code>order</code> values.
+      </p>
+
+      <!-- Drag and Drop Area -->
+      <label
+        for="fileInput"
+        id="dropArea"
+        class="drop-area border-2 border-dashed border-gray-300 rounded-lg p-8 mb-6 text-center cursor-pointer hover:border-blue-500 hover:bg-gray-50"
+      >
+        <div class="text-gray-500">
+          <!-- Upload Icon (Lucide: Upload) -->
+          <svg
+            class="mx-auto h-12 w-12 text-gray-400"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="17 8 12 3 7 8" />
+            <line x1="12" x2="12" y1="3" y2="15" />
+          </svg>
+          <p class="mt-2 font-medium text-gray-700">
+            Drag & drop your JSON file here
+          </p>
+          <p class="text-xs text-gray-500">
+            or click to upload (must be `.json`)
+          </p>
+        </div>
+        <input type="file" id="fileInput" accept=".json" />
+      </label>
+
+      <div id="list" class="space-y-3 min-h-[100px]">
+        <div
+          id="placeholder"
+          class="text-center p-8 text-gray-400 border border-gray-200 rounded-lg"
+        >
+          No file loaded. Upload a JSON file to begin reordering.
+        </div>
+      </div>
+
+      <button
+        onclick="exportJSON()"
+        id="exportButton"
+        class="w-full mt-8 px-4 py-3 bg-blue-600 text-white font-bold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-500 focus:ring-opacity-50 transition-colors disabled:bg-gray-400 disabled:shadow-none"
+        disabled
+      >
+        Export Updated JSON (hisn_updated_order.json)
+      </button>
+    </div>
+
+    <script>
+      let data = [];
+      const dropArea = document.getElementById("dropArea");
+      const fileInput = document.getElementById("fileInput");
+      const list = document.getElementById("list");
+      const exportButton = document.getElementById("exportButton");
+      const placeholder = document.getElementById("placeholder");
+
+      async function handleFile(file) {
+        if (!file || file.type !== "application/json") {
+          list.innerHTML = `<div class="p-4 bg-red-100 text-red-700 rounded-lg">Invalid file type. Please upload a JSON file.</div>`;
+          exportButton.disabled = true;
+          placeholder.style.display = "none";
+          return;
+        }
+        try {
+          const text = await file.text();
+          data = JSON.parse(text);
+          render();
+        } catch (e) {
+          list.innerHTML = `<div class="p-4 bg-red-100 text-red-700 rounded-lg">Error: Could not parse JSON file. Please ensure the file format is correct.</div>`;
+          exportButton.disabled = true;
+          placeholder.style.display = "none";
+        }
+      }
+
+      function render() {
+        list.innerHTML = "";
+        placeholder.style.display = "none";
+        exportButton.disabled = data.length === 0;
+
+        const sorted = [...data].sort((a, b) => a.order - b.order);
+
+        sorted.forEach((item) => {
+          const div = document.createElement("div");
+          div.className =
+            "item bg-white border border-gray-200 p-4 rounded-lg shadow-sm mb-3 flex items-center transition-all duration-150 hover:shadow-md";
+          div.draggable = true;
+          div.dataset.originalIndex = data.indexOf(item);
+
+          const en =
+            item.name?.find((n) => n.language === "english")?.text ||
+            "No English Name";
+          const id =
+            item.name?.find((n) => n.language === "bahasa")?.text ||
+            "No Bahasa Name";
+
+          const dragHandle = `
+        <span class="drag-handle">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5 text-gray-400">
+                <circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/>
+            </svg>
+        </span>
+    `;
+
+          div.innerHTML = `
+      ${dragHandle}
+      <div class="flex-grow min-w-0">
+        <span class="order text-lg font-bold text-blue-600 mr-2">${item.order}.</span>
+        <strong class="truncate block">${en}</strong>
+        <small class="text-gray-500 truncate block">${id}</small>
+      </div>
+    `;
+
+          addDragHandlers(div);
+          list.appendChild(div);
+        });
+      }
+
+      function updateOrder() {
+        const items = [...list.children];
+        items.forEach((el, i) => {
+          const originalIndex = el.dataset.originalIndex;
+          data[originalIndex].order = i + 1;
+          el.querySelector(".order").textContent = `${i + 1}.`;
+        });
+      }
+
+      function addDragHandlers(el) {
+        el.addEventListener("dragstart", (e) => {
+          el.classList.add("dragging");
+          e.dataTransfer.setData("text/plain", el.dataset.originalIndex);
+        });
+
+        el.addEventListener("dragend", () => {
+          el.classList.remove("dragging");
+          updateOrder();
+        });
+      }
+
+      // Single dragover listener for the list container to handle the drop position
+      list.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        const dragging = document.querySelector(".dragging");
+        if (!dragging) return;
+
+        // Find the element currently being dragged over, excluding itself
+        const target = e.target.closest(".item:not(.dragging)");
+        if (!target) return;
+
+        const rect = target.getBoundingClientRect();
+        // Check if the drop position is in the lower half of the target element
+        const next = e.clientY > rect.top + rect.height / 2;
+
+        // Insert the dragging element before or after the target
+        list.insertBefore(dragging, next ? target.nextSibling : target);
+      });
+
+      // --- File Input & Drag & Drop Handlers ---
+
+      fileInput.addEventListener("change", (e) => {
+        const file = e.target.files[0];
+        if (file) handleFile(file);
+      });
+
+      dropArea.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        dropArea.classList.add("highlight");
+      });
+
+      dropArea.addEventListener("dragleave", () => {
+        dropArea.classList.remove("highlight");
+      });
+
+      dropArea.addEventListener("drop", (e) => {
+        e.preventDefault();
+        dropArea.classList.remove("highlight");
+        const file = e.dataTransfer.files[0];
+        if (file) handleFile(file);
+      });
+
+      // --- Export Function ---
+
+      function exportJSON() {
+        // Sort data by the new 'order' field before exporting
+        const sortedData = [...data].sort((a, b) => a.order - b.order);
+
+        const blob = new Blob([JSON.stringify(sortedData, null, 2)], {
+          type: "application/json",
+        });
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "hisn_updated_order.json";
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    </script>
+  </body>
+</html>
