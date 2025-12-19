@@ -1,0 +1,60 @@
+{
+  "kutub_al_sittah": [
+    {
+      "book_name": "Sahih al-Bukhari",
+      "author": "Imam Muhammad al-Bukhari",
+      "real_name": "Abū ʿAbd Allāh Muḥammad ibn Ismāʿīl ibn Ibrāhīm ibn al-Mughīrah ibn Bardizbah al-Juʿfī al-Bukhārī",
+      "description": "Ṣaḥīḥ al-Bukhārī is a collection of hadīth compiled by Abu Abdullāh Muhammad Ibn Ismā`īl al-Bukhārī. It is recognized by the majority of the Muslim world as one of the most authentic collections of the Sunnah of the Prophet (ﷺ).",
+      "hadith_count": 7563
+    },
+    {
+      "book_name": "Sahih Muslim",
+      "author": "Imam Muslim ibn al-Hajjaj",
+      "real_name": "Abū al-Ḥusayn Muslim ibn al-Ḥajjāj ibn Muslim ibn Ward ibn Kawshādh al-Qushayrī an-Naysābūrī",
+      "description": "Sahih Muslim is a renowned collection of hadith compiled by Imam Muslim ibn al-Hajjaj al-Naysaburi.",
+      "hadith_count": 3033
+    },
+    {
+      "book_name": "Sunan Abi Dawood",
+      "author": "Imam Abu Dawood al-Sijistani",
+      "real_name": "Abū Dāwūd Sulaymān ibn al-Ashʿath ibn Isḥāq al-Azdī al-Sijistānī",
+      "description": "Sunan Abi Dawud is a collection of hadith compiled by Imam Abū Dāwūd Sulaymān ibn al-Ashʿath as-Sijistānī.",
+      "hadith_count": 5274
+    },
+    {
+      "book_name": "Jami' at-Tirmidhi",
+      "author": "Imam Abu 'Isa Muhammad at-Tirmidhi",
+      "real_name": "Abū ʿĪsā Muḥammad ibn ʿĪsā ibn Sawrah ibn Mūsā ibn al-Ḍaḥḥāk al-Sulamī al-Tirmidhī",
+      "description": "Jāmi` at-Tirmidhī is a collection of hadīth compiled by Imām Abu `Isa Muhammad at-Tirmidhī.",
+      "hadith_count": 3956
+    },
+    {
+      "book_name": "Sunan an-Nasa'i",
+      "author": "Imam Ahmad an-Nasa'i",
+      "real_name": "Abū ʿAbd al-Raḥmān Aḥmad ibn Shuʿayb ibn ʿAlī ibn Sinān ibn Baḥr al-Khurāsānī al-Nasāʾī",
+      "description": "Sunan an-Nasa'i is a hadith collection by Imam Ahmad an-Nasa'i.",
+      "hadith_count": 5758
+    },
+    {
+      "book_name": "Sunan Ibn Majah",
+      "author": "Imam Muhammad bin Yazid Ibn Majah al-Qazvini",
+      "real_name": "Abū ʻAbd Allāh Muḥammad ibn Yazīd ibn Mājah al-Rabʻī al-Qazwīnī",
+      "description": "Sunan Ibn Mājah is a collection of hadīth compiled by Imām Muḥammad bin Yazīd Ibn Mājah al-Qazvīnī.",
+      "hadith_count": 4341
+    },
+    {
+      "book_name": "Riyad as-Salihin",
+      "author": "Imam Yahya ibn Sharaf an-Nawawi",
+      "real_name": "Abū Zakariyyā Yaḥyā ibn Sharaf ibn Murī ibn Ḥasan ibn Ḥusayn ibn Muḥammad an-Nawawī",
+      "description": "Riyad as-Salihin (The Gardens of the Righteous) is a collection of authentic hadiths compiled by Imam an-Nawawi. It focuses on ethics, manners, and spirituality, covering topics such as sincerity, patience, gratitude, and humility. It is one of the most widely read and referenced hadith books among Muslims worldwide.",
+      "hadith_count": 1896
+    },
+    {
+      "book_name": "Arba'in An Nawawi",
+      "author": "Imam Yahya ibn Sharaf an-Nawawi",
+      "real_name": "Abū Zakariyyā Yaḥyā ibn Sharaf ibn Murī ibn Ḥasan ibn Ḥusayn ibn Muḥammad an-Nawawī",
+      "description": "Arba'in an-Nawawi (The Forty Hadith of an-Nawawi) is a compilation of forty-two fundamental hadith of Islam. The collection is highly regarded as a concise summary of the essential principles of Islamic law and morality.",
+      "hadith_count": 42
+    }
+  ]
+}

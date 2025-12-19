@@ -1,0 +1,60 @@
+{
+  "kutub_al_sittah": [
+    {
+      "book_name": "Shahih al-Bukhari",
+      "author": "Imam Muhammad al-Bukhari",
+      "real_name": "Abū ʿAbd Allāh Muḥammad ibn Ismāʿīl ibn Ibrāhīm ibn al-Mughīrah ibn Bardizbah al-Juʿfī al-Bukhārī",
+      "description": "Shahih al-Bukhari adalah kumpulan hadis yang disusun oleh Abu Abdullah Muhammad bin Ismail al-Bukhari.",
+      "hadith_count": 7563
+    },
+    {
+      "book_name": "Shahih Muslim",
+      "author": "Imam Muslim ibn al-Hajjaj",
+      "real_name": "Abū al-Ḥusayn Muslim ibn al-Ḥajjāj ibn Muslim ibn Ward ibn Kawshādh al-Qushayrī an-Naysābūrī",
+      "description": "Shahih Muslim adalah kumpulan hadis terkenal yang disusun oleh Imam Muslim ibn al-Hajjaj al-Naysaburi.",
+      "hadith_count": 3033
+    },
+    {
+      "book_name": "Sunan Abi Daud",
+      "author": "Imam Abu Daud al-Sijistani",
+      "real_name": "Abū Dāwūd Sulaymān ibn al-Ashʿath ibn Isḥāq al-Azdī al-Sijistānī",
+      "description": "Sunan Abi Daud adalah kumpulan hadis yang disusun oleh Imam Abū Dāwūd Sulaymān ibn al-Ashʿath as-Sijistānī.",
+      "hadith_count": 5274
+    },
+    {
+      "book_name": "Jami' at-Tirmidzi",
+      "author": "Imam Abu 'Isa Muhammad at-Tirmidzi",
+      "real_name": "Abū ʿĪsā Muḥammad ibn ʿĪsā ibn Sawrah ibn Mūsā ibn al-Ḍaḥḥāk al-Sulamī al-Tirmidhī",
+      "description": "Jami` at-Tirmidzi adalah kumpulan hadis yang disusun oleh Imam Abu `Isa Muhammad at-Tirmidzi.",
+      "hadith_count": 3956
+    },
+    {
+      "book_name": "Sunan an-Nasa'i",
+      "author": "Imam Ahmad an-Nasa'i",
+      "real_name": "Abū ʿAbd al-Raḥmān Aḥmad ibn Shuʿayb ibn ʿAlī ibn Sinān ibn Baḥr al-Khurāsānī al-Nasāʾī",
+      "description": "Sunan an-Nasa'i adalah kumpulan hadis karya Imam Ahmad an-Nasa'i.",
+      "hadith_count": 5758
+    },
+    {
+      "book_name": "Sunan Ibnu Majah",
+      "author": "Imam Muhammad bin Yazid Ibnu Majah al-Qazvini",
+      "real_name": "Abū ʻAbd Allāh Muḥammad ibn Yazīd ibn Mājah al-Rabʻī al-Qazwīnī",
+      "description": "Sunan Ibnu Majah adalah kumpulan hadis yang disusun oleh Imam Muhammad bin Yazid Ibnu Majah al-Qazvini.",
+      "hadith_count": 4341
+    },
+    {
+      "book_name": "Riyadus Shalihin",
+      "author": "Imam Yahya bin Syaraf an-Nawawi",
+      "real_name": "Abū Zakariyyā Yaḥyā ibn Sharaf ibn Murī ibn Ḥasan ibn Ḥusayn ibn Muḥammad an-Nawawī",
+      "description": "Riyadus Shalihin (Taman Orang-Orang Saleh) adalah kumpulan hadis sahih yang disusun oleh Imam an-Nawawi. Kitab ini berfokus pada akhlak, adab, dan spiritualitas, mencakup topik-topik seperti keikhlasan, kesabaran, syukur, dan kerendahan hati. Riyadus Shalihin adalah salah satu kitab hadis paling populer di dunia Islam.",
+      "hadith_count": 1896
+    },
+    {
+      "book_name": "Arba'in An Nawawi",
+      "author": "Imam Yahya bin Syaraf an-Nawawi",
+      "real_name": "Abū Zakariyyā Yaḥyā ibn Sharaf ibn Murī ibn Ḥasan ibn Ḥusayn ibn Muḥammad an-Nawawī",
+      "description": "Arba'in An Nawawi (Hadis Empat Puluh an-Nawawi) adalah kumpulan empat puluh dua hadis dasar Islam. Kumpulan ini sangat dihormati sebagai ringkasan ringkas dari prinsip-prinsip penting hukum dan moralitas Islam.",
+      "hadith_count": 42
+    }
+  ]
+}
